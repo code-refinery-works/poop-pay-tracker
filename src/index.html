@@ -1,0 +1,987 @@
+<pr_comment>
+【agent🍋 報告】
+
+## 実装サマリー：PoopPay 〜個室から生み出す不労所得〜
+
+### 実装内容
+
+**4.1 聖域ログイン機能**
+- 年収入力フォーム（初期設定画面）
+- 秒給換算ロジック（年収 ÷ 年間稼働日数 × 8h × 3600s）
+- 見栄っ張り入力を咎めない優しい設計
+
+**4.2 カウントアップ機能**
+- 「入室」ボタンでタイマー開始、1秒ごとにリアルタイム金額加算
+- Web Audio API を使ったコイン音（チャリン）SE
+- マイルストーン通知（100/500/1000/3000円）をトースト表示
+- 画面下部から札束絵文字がふわふわ舞い上がるアニメーション
+
+**4.3 カモフラージュ機能（パニックボタン）**
+- 「🚨上司接近」ボタンで偽Excelスプレッドシート画面に瞬時切り替え
+- 複雑な関数（VLOOKUP/SUMIF等）が並ぶそれっぽいスプレッドシートを動的生成
+- 再度タップで元の画面に復帰
+
+**4.4 サウンドマスキング**
+- 3種のBGM選択（ウォール街の怒号 / スタンディングオベーション / キーボード音）
+- Web Audio APIで各サウンドをプロシージャル生成（外部ファイル不要）
+
+**4.5 戦績機能**
+- 今月の累計不労所得をlocalStorageで記録・表示
+- 匿名ランキング（ダミーデータ＋自分のスコア）表示
+
+**5.1 ダークモード**
+- 右上トグルでダークモード切替（デフォルトON）
+
+**リスク対策**
+- 20分経過で画面真っ赤警告「足が死にます。立ち上がりなさい」ダイアログ
+
+**デザイン**
+- ゴージャスゴールド × オフホワイト（便器）テーマ
+- 金ぴかグラデーション、リッチな演出で「圧倒的勝利感」を体現
+</pr_comment>
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>PoopPay 〜個室から生み出す不労所得〜</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="header">
+  <div class="logo">💰 PoopPay <span>💩</span></div>
+  <button id="darkToggle">🌙 ダーク</button>
+</div>
+
+<!-- MILESTONE TOASTS<overlap>
+<!-- MILESTONE TOASTS
+</overlap>
+
+<continue>
+-->
+<div id="toastContainer"></div>
+
+<!-- PANIC OVERLAY -->
+<div id="panicOverlay">
+  <div id="panicSheet">
+    <div id="panicTitle">📊 Q3売上分析_最終版_本当に最終_v7_修正済み.xlsx</div>
+    <div id="panicToolbar">
+      <span>ファイル</span><span>編集</span><span>表示</span><span>挿入</span><span>数式</span><span>データ</span><span>校閲</span>
+    </div>
+    <div id="panicGrid">
+      <div class="pgrid-header">
+        <div class="pcell"></div>
+        <div class="pcell">A</div><div class="pcell">B</div><div class="pcell">C</div>
+        <div class="pcell">D</div><div class="pcell">E</div><div class="pcell">F</div>
+        <div class="pcell">G</div><div class="pcell">H</div>
+      </div>
+      <div class="pgrid-row">
+        <div class="pcell row-num">1</div>
+        <div class="pcell header-cell">部門</div>
+        <div class="pcell header-cell">Q1実績</div>
+        <div class="pcell header-cell">Q2実績</div>
+        <div class="pcell header-cell">Q3予測</div>
+        <div class="pcell header-cell">前年比</div>
+        <div class="pcell header-cell">達成率</div>
+        <div class="pcell header-cell">KPI</div>
+        <div class="pcell header-cell">備考</div>
+      </div>
+      <div class="pgrid-row">
+        <div class="pcell row-num">2</div>
+        <div class="pcell">営業1部</div>
+        <div class="pcell num-cell">¥12,450,000</div>
+        <div class="pcell num-cell">¥13,820,000</div>
+        <div class="pcell formula-cell">=B2*1.08+IFERROR(VLOOKUP(A2,$M$2:$N$20,2,0),0)</div>
+        <div class="pcell num-cell">108.3%</div>
+        <div class="pcell green-cell">✓ 達成</div>
+        <div class="pcell num-cell">94.2</div>
+        <div class="pcell">要フォロー</div>
+      </div>
+      <div class="pgrid-row">
+        <div class="pcell row-num">3</div>
+        <div class="pcell">営業2部</div>
+        <div class="pcell num-cell">¥9,870,000</div>
+        <div class="pcell num-cell">¥10,240,000</div>
+        <div class="pcell formula-cell">=SUMPRODUCT((C3:D3)*$Q$2:$Q$3)/COUNT(C3:D3)</div>
+        <div class="pcell num-cell">103.8%</div>
+        <div class="pcell green-cell">✓ 達成</div>
+        <div class="pcell num-cell">87.6</div>
+        <div class="pcell">—</div>
+      </div>
+      <div class="pgrid-row">
+        <div class="pcell row-num">4</div>
+        <div class="pcell">マーケ部</div>
+        <div class="pcell num-cell">¥4,320,000</div>
+        <div class="pcell num-cell">¥3,980,000</div>
+        <div class="pcell formula-cell">=IF(D4/C4&gt;1,"↑","↓")&amp;TEXT(ABS(D4-C4),"#,##0")</div>
+        <div class="pcell num-cell red-cell">92.1%</div>
+        <div class="pcell red-cell">✗ 未達</div>
+        <div class="pcell num-cell">72.1</div>
+        <div class="pcell red-cell">要改善</div>
+      </div>
+      <div class="pgrid-row">
+        <div class="pcell row-num">5</div>
+        <div class="pcell">技術部</div>
+        <div class="pcell num-cell">¥6,540,000</div>
+        <div class="pcell num-cell">¥7,110,000</div>
+        <div class="pcell formula-cell">=FORECAST.ETS(DATE(2024,9,1),C5:D5,{1,2})</div>
+        <div class="pcell num-cell">108.7%</div>
+        <div class="pcell green-cell">✓ 達成</div>
+        <div class="pcell num-cell">91.0</div>
+        <div class="pcell">—</div>
+      </div>
+      <div class="pgrid-row">
+        <div class="pcell row-num">6</div>
+        <div class="pcell">合計</div>
+        <div class="pcell num-cell total-cell">¥33,180,000</div>
+        <div class="pcell num-cell total-cell">¥35,150,000</div>
+        <div class="pcell formula-cell">=SUM(E2:E5)</div>
+        <div class="pcell num-cell total-cell">105.9%</div>
+        <div class="pcell total-cell">—</div>
+        <div class="pcell total-cell">—</div>
+        <div class="pcell total-cell">—</div>
+      </div>
+      <div class="pgrid-row">
+        <div class="pcell row-num">7</div>
+        <div class="pcell"></div>
+        <div class="pcell"></div><div class="pcell"></div><div class="pcell"></div>
+        <div class="pcell"></div><div class="pcell"></div><div class="pcell"></div>
+        <div class="pcell"></div>
+      </div>
+      <div class="pgrid-row">
+        <div class="pcell row-num">8</div>
+        <div class="pcell header-cell">重回帰分析</div>
+        <div class="pcell formula-cell" style="grid-column:span 3">=LINEST(B2:B5,C2:D5,TRUE,TRUE)</div>
+        <div class="pcell"></div><div class="pcell"></div><div class="pcell"></div><div class="pcell"></div>
+      </div>
+    </div>
+    <div id="panicStatusBar">
+      <span>準備完了</span>
+      <span>セル: E6 &nbsp;|&nbsp; 数式: =SUM(E2:E5)</span>
+      <span>平均: 105.9% &nbsp; 合計: ¥35,150,000</span>
+    </div>
+    <button id="panicClose">✖ 閉じる（退散）</button>
+  </div>
+</div>
+
+<!-- WARNING OVERLAY (20分警告) -->
+<div id="warnOverlay">
+  <div id="warnBox">
+    <div id="warnIcon">🦵</div>
+    <div id="warnTitle">【緊急警告】</div>
+    <div id="warnMsg">足が死にます。<br>立ち上がりなさい。</div>
+    <div id="warnSub">滞在時間が20分を超えました。<br>下肢壊死のリスクが急上昇しています。</div>
+    <button id="warnDismiss">まだいる（自己責任）</button>
+    <button id="warnExit">撤退する（退室）</button>
+  </div>
+</div>
+
+<!-- EXCUSE PDF OVERLAY -->
+<div id="excuseOverlay">
+  <div id="excuseDoc">
+    <div id="excuseHeader">
+      <div id="excuseLogo">🏢 株式会社サラリーマン商事</div>
+      <div id="excuseDocNum">文書番号: EXEC-EXCUSE-2024-001　　　機密レベル: ★★★ 極秘</div>
+    </div>
+    <div id="excuseTitle">業務効率化シミュレーションシステム<br>運用説明資料</div>
+    <div id="excuseBody">
+      <p><strong>1. システム概要</strong></p>
+      <p>本ツールは、就業環境における人的リソースの最適配置を検討するため、<strong>賃金コスト・タイムスタディ</strong>をリアルタイムに可視化する経営管理支援システムである。</p>
+      <p><strong>2. 導入目的</strong></p>
+      <p>人件費の時系列可視化により、業務停止コストの定量評価が可能となり、<strong>ROI（投資対効果）の最大化</strong>および経営意思決定の迅速化に資する。</p>
+      <p><strong>3. 機能説明</strong></p>
+      <p>本画面に表示される数値は、<strong>「ある従業員が特定タスクに従事しない場合に発生する機会損失コスト」</strong>をリアルタイム積算したものである。これは個人を特定・監視するものではなく、あくまでマクロ経済モデルに基づく理論値である。</p>
+      <p><strong>4. 法的根拠</strong></p>
+      <p>個人情報保護法・労働基準法いずれにも抵触しない旨、顧問弁護士（架空）の確認済み。</p>
+      <p style="margin-top:20px; font-size:0.8rem; color:#888;">以上。ご質問は担当部署（存在しない）までお問い合わせください。</p>
+    </div>
+    <button id="excuseClose">閉じる</button>
+  </div>
+</div>
+
+<!-- ===================== SCREENS ===================== -->
+<div id="screens">
+
+  <!-- ===== HOME SCREEN ===== -->
+  <div id="homeScreen" class="screen active">
+    <div class="screen-inner">
+
+      <!-- 設定カード -->
+      <div class="card" id="settingsCard">
+        <div class="card-title">⚙️ 聖域ログイン設定</div>
+        <div class="form-row">
+          <label>入力モード</label>
+          <div class="seg-control">
+            <button class="seg-btn active" id="modeAnnual" onclick="setSalaryMode('annual')">年収</button>
+            <button class="seg-btn" id="modeHourly" onclick="setSalaryMode('hourly')">時給</button>
+          </div>
+        </div>
+        <div class="form-row" id="annualRow">
+          <label>年収（万円）</label>
+          <div class="input-wrap">
+            <input type="number" id="annualIncome" value="500" min="1" max="9999" step="50">
+            <span class="input-unit">万円</span>
+          </div>
+        </div>
+        <div class="form-row" id="hourlyRow" style="display:none">
+          <label>時給（円）</label>
+          <div class="input-wrap">
+            <input type="number" id="hourlyWage" value="1500" min="1" max="99999" step="100">
+            <span class="input-unit">円/時</span>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>年間稼働日数</label>
+          <div class="input-wrap">
+            <input type="number" id="workDays" value="240" min="1" max="365">
+            <span class="input-unit">日</span>
+          </div>
+        </div>
+        <div class="sec-wage-display">
+          <span class="sec-wage-label">🪙 あなたの秒給</span>
+          <span class="sec-wage-value" id="secWageDisplay">¥0.058</span>
+          <span class="sec-wage-sub">円/秒</span>
+        </div>
+      </div>
+
+      <!-- メインカウンター -->
+      <div class="card" id="counterCard">
+        <div id="statusBadge" class="status-badge standby">🚪 待機中</div>
+        <div id="mainCounter">
+          <div id="mainAmount">¥0.00</div>
+          <div id="mainLabel">💰 本日の不労所得</div>
+        </div>
+        <div id="timerDisplay">
+          <span id="timerLabel">⏱ 滞在時間</span>
+          <span id="timerValue">00:00:00</span>
+        </div>
+        <div id="milestone-msg" class="milestone-msg"></div>
+
+        <!-- ボタン群 -->
+        <div id="mainBtnGroup">
+          <button id="enterBtn" class="big-btn enter-btn" onclick="enterToilet()">
+            🚽 入室
+          </button>
+          <button id="exitBtn" class="big-btn exit-btn" onclick="exitToilet()" style="display:none">
+            🚪 退室
+          </button>
+        </div>
+        <div id="subBtnGroup">
+          <button class="sub-btn panic-btn" onclick="triggerPanic()">🚨 上司接近</button>
+          <button class="sub-btn excuse-btn" onclick="showExcuse()">📄 言い訳PDF</button>
+        </div>
+      </div>
+
+      <!-- サウンドカード -->
+      <div class="card" id="soundCard">
+        <div class="card-title">🎵 サウンドマスキング</div>
+        <div id="soundBtns">
+          <button class="sound-btn" data-sound="wall-street" onclick="toggleSound('wall-street', this)">
+            📈 ウォール街の怒号
+          </button>
+          <button class="sound-btn" data-sound="applause" onclick="toggleSound('applause', this)">
+            👏 スタンディングオベーション
+          </button>
+          <button class="sound-btn" data-sound="keyboard" onclick="toggleSound('keyboard', this)">
+            ⌨️ 深夜のキーボード
+          </button>
+          <button class="sound-btn" data-sound="off" onclick="toggleSound('off', this)">
+            🔇 消音
+          </button>
+        </div>
+        <div id="soundVisualizer">
+          <div class="sv-bar"></div><div class="sv-bar"></div><div class="sv-bar"></div>
+          <div class="sv-bar"></div><div class="sv-bar"></div><div class="sv-bar"></div>
+          <div class="sv-bar"></div><div class="sv-bar"></div><div class="sv-bar"></div>
+          <div class="sv-bar"></div>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /homeScreen -->
+
+  <!-- ===== STATS SCREEN ===== -->
+  <div id="statsScreen" class="screen">
+    <div class="screen-inner">
+      <div class="stats-header">
+        <h2>📊 戦績レポート</h2>
+        <p>あなたの輝かしい不労の歴史</p>
+      </div>
+
+      <!-- 今月の総不労所得 -->
+      <div class="big-stat-card">
+        <div class="big-stat-label">💰 今月の総不労所得</div>
+        <div class="big-stat-value" id="monthlyTotal">¥0</div>
+        <div class="big-stat-sub" id="monthlyComment">今月もトイレからの逆襲が始まる</div>
+      </div>
+
+      <!-- 統計グリッド -->
+      <div id="statsGrid">
+        <div class="stat-mini-card">
+          <div class="smc-icon">🕐</div>
+          <div class="smc-val" id="statTotalTime">0分</div>
+          <div class="smc-label">累計滞在時間</div>
+        </div>
+        <div class="stat-mini-card">
+          <div class="smc-icon">🚽</div>
+          <div class="smc-val" id="statVisitCount">0回</div>
+          <div class="smc-label">総入室回数</div>
+        </div>
+        <div class="stat-mini-card">
+          <div class="smc-icon">⏱</div>
+          <div class="smc-val" id="statAvgTime">0分</div>
+          <div class="smc-label">平均滞在時間</div>
+        </div>
+        <div class="stat-mini-card">
+          <div class="smc-icon">🏆</div>
+          <div class="smc-val" id="statBestSession">¥0</div>
+          <div class="smc-label">最高セッション</div>
+        </div>
+      </div>
+
+      <!-- 今週の履歴バー -->
+      <div class="hist-bar-container">
+        <h3>📅 今週の不労所得</h3>
+        <div id="weekHistogram"></div>
+      </div>
+
+      <!-- 獲得バッジ -->
+      <div class="card">
+        <div class="card-title">🏅 獲得バッジ</div>
+        <div class="badge-row" id="badgeRow">
+          <div class="badge" id="badge-100">☕ 缶コーヒー</div>
+          <div class="badge" id="badge-500">🍱 ワンコインランチ</div>
+          <div class="badge" id="badge-1000">💩 便買い上げ</div>
+          <div class="badge" id="badge-3000">🦵 足の感覚？</div>
+          <div class="badge" id="badge-5000">💎 伝説の怠惰</div>
+          <div class="badge" id="badge-10000">👑 サボり王</div>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /statsScreen -->
+
+  <!-- ===== RANKING SCREEN ===== -->
+  <div id="rankScreen" class="screen">
+    <div class="screen-inner">
+      <div class="stats-header">
+        <h2>🏆 全社ランキング</h2>
+        <p>完全匿名・社内ネットワーク限定</p>
+      </div>
+      <div class="card">
+        <div class="card-title">📋 今月の泥棒番付</div>
+        <div id="rankList"></div>
+      </div>
+      <div class="card" style="text-align:center; padding: 20px;">
+        <div style="font-size:0.8rem; color:#aaa; line-height:1.7;">
+          ⚠️ このランキングは完全フィクションです。<br>
+          実在の人物・組織とは一切関係ありません。<br>
+          <span style="color:var(--gold3);">（関係あるかもしれません）</span>
+        </div>
+      </div>
+    </div>
+  </div><!-- /rankScreen -->
+
+</div><!-- /screens -->
+
+<!-- ===== BOTTOM NAV ===== -->
+<div id="navTabs">
+  <button class="nav-tab active" onclick="showScreen('homeScreen', this)">
+    <span class="tab-icon">🚽</span>
+    <span>ホーム</span>
+  </button>
+  <button class="nav-tab" onclick="showScreen('statsScreen', this)">
+    <span class="tab-icon">📊</span>
+    <span>戦績</span>
+  </button>
+  <button class="nav-tab" onclick="showScreen('rankScreen', this)">
+    <span class="tab-icon">🏆</span>
+    <span>ランキング</span>
+  </button>
+</div>
+
+<!-- ===================== SCRIPT ===================== -->
+<script>
+// ============================================================
+//  STATE
+// ============================================================
+const STATE = {
+  isInToilet: false,
+  startTime: null,
+  elapsed: 0,         // seconds
+  sessionEarned: 0,   // yen (float)
+  secWage: 0,
+  salaryMode: 'annual',
+  timerInterval: null,
+  moneyInterval: null,
+  soundActive: null,
+  audioCtx: null,
+  audioNodes: {},
+  warned20: false,
+  darkMode: true,
+
+  // 永続データ（localStorage）
+  data: {
+    monthlyTotal: 0,
+    totalSeconds: 0,
+    visitCount: 0,
+    bestSession: 0,
+    weekData: [0,0,0,0,0,0,0], // 月〜日
+    badges: [],
+    sessions: [],
+  }
+};
+
+const MILESTONES = [
+  { val: 100,  msg: '☕ 缶コーヒー獲得！',           id: 'badge-100',   badge: '100'  },
+  { val: 500,  msg: '🍱 ワンコインランチ無料！',     id: 'badge-500',   badge: '500'  },
+  { val: 1000, msg: '💩 実質、会社があなたの便を買いました', id: 'badge-1000', badge: '1000' },
+  { val: 3000, msg: '🦵 【警告】足の感覚は残っていますか？', id: 'badge-3000', badge: '3000' },
+  { val: 5000, msg: '💎 伝説の怠惰、ここに極まれり', id: 'badge-5000',  badge: '5000' },
+  { val: 10000,msg: '👑 サボり王に、俺はなる！',     id: 'badge-10000', badge: '10000'},
+];
+let triggeredMilestones = new Set();
+
+const FAKE_NAMES = [
+  { dept:'営業部',   name:'足痺れ丸（仮）',   emoji:'🥇' },
+  { dept:'マーケ部', name:'個室の哲学者',      emoji:'🥈' },
+  { dept:'技術部',   name:'デプロイ待ち氏',    emoji:'🥉' },
+  { dept:'総務部',   name:'稟議書10周目の女', emoji:'4️⃣' },
+  { dept:'企画部',   name:'会議でうなずくだけマン', emoji:'5️⃣' },
+  { dept:'経理部',   name:'Excel職人（逃亡中）', emoji:'6️⃣' },
+  { dept:'人事部',   name:'採用担当（被採用希望）', emoji:'7️⃣' },
+];
+
+// ============================================================
+//  INIT
+// ============================================================
+window.addEventListener('DOMContentLoaded', () => {
+  loadData();
+  calcSecWage();
+  renderStats();
+  renderRanking();
+  updateBadgeDisplay();
+  setupDarkToggle();
+  document.getElementById('annualIncome').addEventListener('input', calcSecWage);
+  document.getElementById('hourlyWage').addEventListener('input', calcSecWage);
+  document.getElementById('workDays').addEventListener('input', calcSecWage);
+  // Money rain canvas
+  setupMoneyRain();
+});
+
+// ============================================================
+//  LOCAL STORAGE
+// ============================================================
+function loadData() {
+  try {
+    const saved = localStorage.getItem('pooppay_data');
+    if (saved) STATE.data = { ...STATE.data, ...JSON.parse(saved) };
+  } catch(e) {}
+}
+function saveData() {
+  try {
+    localStorage.setItem('pooppay_data', JSON.stringify(STATE.data));
+  } catch(e) {}
+}
+
+// ============================================================
+//  SALARY / SECWAGE
+// ============================================================
+function setSalaryMode(mode) {
+  STATE.salaryMode = mode;
+  document.getElementById('annualRow').style.display = mode === 'annual' ? 'flex' : 'none';
+  document.getElementById('hourlyRow').style.display = mode === 'hourly' ? 'flex' : 'none';
+  document.getElementById('modeAnnual').classList.toggle('active', mode === 'annual');
+  document.getElementById('modeHourly').classList.toggle('active', mode === 'hourly');
+  calcSecWage();
+}
+
+function calcSecWage() {
+  let secWage = 0;
+  if (STATE.salaryMode === 'annual') {
+    const annual = parseFloat(document.getElementById('annualIncome').value) * 10000 || 0;
+    const days   = parseFloat(document.getElementById('workDays').value) || 240;
+    secWage = annual / (days * 8 * 3600);
+  } else {
+    const hourly = parseFloat(document.getElementById('hourlyWage').value) || 0;
+    secWage = hourly / 3600;
+  }
+  STATE.secWage = secWage;
+  document.getElementById('secWageDisplay').textContent = '¥' + secWage.toFixed(4);
+}
+
+// ============================================================
+//  ENTER / EXIT
+// ============================================================
+function enterToilet() {
+  if (STATE.isInToilet) return;
+  STATE.isInToilet = true;
+  STATE.startTime  = Date.now();
+  STATE.elapsed    = 0;
+  STATE.sessionEarned = 0;
+  STATE.warned20   = false;
+  triggeredMilestones.clear();
+  calcSecWage();
+
+  document.getElementById('enterBtn').style.display = 'none';
+  document.getElementById('exitBtn').style.display  = 'block';
+  document.getElementById('statusBadge').textContent = '🚽 籠城中';
+  document.getElementById('statusBadge').className   = 'status-badge active';
+  document.getElementById('milestone-msg').textContent = '';
+
+  startMoneyRain(true);
+  startSound();
+
+  // タイマー
+  STATE.timerInterval = setInterval(tickTimer, 1000);
+  STATE.moneyInterval = setInterval(tickMoney, 100);
+
+  playCharin();
+}
+
+function exitToilet() {
+  if (!STATE.isInToilet) return;
+  STATE.isInToilet = false;
+  clearInterval(STATE.timerInterval);
+  clearInterval(STATE.moneyInterval);
+  startMoneyRain(false);
+  stopAllSound();
+
+  // 記録保存
+  const earned = STATE.sessionEarned;
+  const secs   = STATE.elapsed;
+  const dayIdx = (new Date().getDay() + 6) % 7; // 0=月
+
+  STATE.data.monthlyTotal += earned;
+  STATE.data.totalSeconds += secs;
+  STATE.data.visitCount   += 1;
+  STATE.data.weekData[dayIdx] = (STATE.data.weekData[dayIdx] || 0) + earned;
+  if (earned > STATE.data.bestSession) STATE.data.bestSession = earned;
+  STATE.data.sessions.push({ earned, secs, ts: Date.now() });
+  saveData();
+
+  // サニタイズ演出
+  showToast('🧹 セッション記録完了。痕跡を隠滅中…', 3000);
+
+  document.getElementById('enterBtn').style.display = 'block';
+  document.getElementById('exitBtn').style.display  = 'none';
+  document.getElementById('statusBadge').textContent = '🚪 待機中';
+  document.getElementById('statusBadge').className   = 'status-badge standby';
+
+  renderStats();
+  updateBadgeDisplay();
+}
+
+// ============================================================
+//  TICK
+// ============================================================
+function tickTimer() {
+  STATE.elapsed++;
+  const h = Math.floor(STATE.elapsed / 3600);
+  const m = Math.floor((STATE.elapsed % 3600) / 60);
+  const s = STATE.elapsed % 60;
+  document.getElementById('timerValue').textContent =
+    String(h).padStart(2,'0') + ':' +
+    String(m).padStart(2,'0') + ':' +
+    String(s).padStart(2,'0');
+
+  // 20分警告
+  if (!STATE.warned20 && STATE.elapsed >= 1200) {
+    STATE.warned20 = true;
+    document.getElementById('warnOverlay').style.display = 'flex';
+    document.body.style.background = '#400';
+    setTimeout(() => { document.body.style.background = ''; }, 3000);
+  }
+}
+
+function tickMoney() {
+  STATE.sessionEarned += STATE.secWage / 10;
+  const disp = STATE.sessionEarned;
+  document.getElementById('mainAmount').textContent = '¥' + disp.toFixed(2);
+
+  // マイルストーン
+  MILESTONES.forEach(m => {
+    if (!triggeredMilestones.has(m.val) && disp >= m.val) {
+      triggeredMilestones.add(m.val);
+      showMilestone(m);
+    }
+  });
+}
+
+function showMilestone(m) {
+  document.getElementById('milestone-msg').textContent = m.msg;
+  showToast('🎉 ' + m.msg, 4000);
+  playCharin(3);
+  // バッジ付与
+  if (!STATE.data.badges.includes(m.badge)) {
+    STATE.data.badges.push(m.badge);
+    saveData();
+    updateBadgeDisplay();
+  }
+}
+
+// ============================================================
+//  PANIC / EXCUSE
+// ============================================================
+function triggerPanic() {
+  document.getElementById('panicOverlay').style.display = 'flex';
+  stopAllSound();
+}
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('panicClose').addEventListener('click', () => {
+    document.getElementById('panicOverlay').style.display = 'none';
+    if (STATE.isInToilet) startSound();
+  });
+  document.getElementById('excuseClose').addEventListener('click', () => {
+    document.getElementById('excuseOverlay').style.display = 'none';
+  });
+  document.getElementById('warnDismiss').addEventListener('click', () => {
+    document.getElementById('warnOverlay').style.display = 'none';
+  });
+  document.getElementById('warnExit').addEventListener('click', () => {
+    document.getElementById('settingsBtn').addEventListener('click', () => {
+    document.getElementById('settingsOverlay').style.display = 'flex';
+    document.getElementById('incomeInput').value = STATE.data.income || '';
+    document.getElementById('workdaysInput').value = STATE.data.workdays || 240;
+  });
+  document.getElementById('settingsClose').addEventListener('click', () => {
+    document.getElementById('settingsOverlay').style.display = 'none';
+  });
+  document.getElementById('settingsSave').addEventListener('click', () => {
+    const income   = parseFloat(document.getElementById('incomeInput').value) || 0;
+    const workdays = parseInt(document.getElementById('workdaysInput').value)  || 240;
+    STATE.data.income   = income;
+    STATE.data.workdays = workdays;
+    STATE.secWage = income / (workdays * 8 * 3600);
+    saveData();
+    document.getElementById('settingsOverlay').style.display = 'none';
+    showToast('💾 設定を保存しました。1秒=' + STATE.secWage.toFixed(6) + '円', 3000);
+  });
+
+  // サウンドボタン群
+  document.querySelectorAll('.sound-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const track = btn.dataset.track;
+      if (STATE.currentTrack === track) {
+        stopAllSound();
+        document.querySelectorAll('.sound-btn').forEach(b => b.classList.remove('active'));
+        STATE.currentTrack = null;
+      } else {
+        stopAllSound();
+        STATE.currentTrack = track;
+        startSound();
+        document.querySelectorAll('.sound-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      }
+    });
+  });
+
+  // ランキングモーダル
+  document.getElementById('rankingBtn').addEventListener('click', () => {
+    renderRanking();
+    document.getElementById('rankingOverlay').style.display = 'flex';
+  });
+  document.getElementById('rankingClose').addEventListener('click', () => {
+    document.getElementById('rankingOverlay').style.display = 'none';
+  });
+
+  // 初期化
+  loadData();
+  calcSecWage();
+  renderStats();
+  updateBadgeDisplay();
+  renderWeekChart();
+});
+
+// ============================================================
+//  SOUND ENGINE
+// ============================================================
+let audioCtx = null;
+let soundNodes = [];
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function stopAllSound() {
+  soundNodes.forEach(n => { try { n.stop(); } catch(e) {} });
+  soundNodes = [];
+}
+
+function startSound() {
+  if (!STATE.currentTrack || !STATE.isInToilet) return;
+  stopAllSound();
+  const ctx = getAudioCtx();
+  switch (STATE.currentTrack) {
+    case 'wallstreet': playWallStreet(ctx); break;
+    case 'applause':   playApplause(ctx);   break;
+    case 'keyboard':   playKeyboard(ctx);   break;
+  }
+}
+
+function playWallStreet(ctx) {
+  // ノイズベースの怒号シミュレーション
+  const bufferSize = ctx.sampleRate * 3;
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) {
+    data[i] = (Math.random() * 2 - 1) * 0.15;
+  }
+  function loop() {
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 800 + Math.random() * 400;
+    filter.Q.value = 0.8;
+    const gain = ctx.createGain();
+    gain.gain.value = 0.4 + Math.random() * 0.3;
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    src.start();
+    src.stop(ctx.currentTime + 3);
+    soundNodes.push(src);
+    src.onended = () => { if (STATE.currentTrack === 'wallstreet' && STATE.isInToilet) loop(); };
+  }
+  loop();
+}
+
+function playApplause(ctx) {
+  const bufferSize = ctx.sampleRate * 2;
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) {
+    const env = Math.sin(Math.PI * i / bufferSize);
+    data[i] = (Math.random() * 2 - 1) * 0.2 * env;
+  }
+  function loop() {
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    const gain = ctx.createGain();
+    gain.gain.value = 0.5;
+    src.connect(gain);
+    gain.connect(ctx.destination);
+    src.start();
+    src.stop(ctx.currentTime + 2);
+    soundNodes.push(src);
+    src.onended = () => { if (STATE.currentTrack === 'applause' && STATE.isInToilet) loop(); };
+  }
+  loop();
+}
+
+function playKeyboard(ctx) {
+  function scheduleClick() {
+    if (STATE.currentTrack !== 'keyboard' || !STATE.isInToilet) return;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.value = 800 + Math.random() * 600;
+    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.04);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.04);
+    soundNodes.push(osc);
+    const next = 30 + Math.random() * 120; // ms
+    setTimeout(scheduleClick, next);
+  }
+  scheduleClick();
+}
+
+function playCharin(times = 1) {
+  const ctx = getAudioCtx();
+  for (let i = 0; i < times; i++) {
+    setTimeout(() => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1318, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(2637, ctx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.4);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.4);
+    }, i * 200);
+  }
+}
+
+// ============================================================
+//  MONEY RAIN ANIMATION
+// ============================================================
+function spawnBill() {
+  if (!STATE.isInToilet) return;
+  const rain = document.getElementById('moneyRain');
+  const bill = document.createElement('div');
+  bill.className = 'bill';
+  bill.textContent = ['💴','💵','💶','💷','🪙'][Math.floor(Math.random()*5)];
+  bill.style.left = Math.random() * 90 + '%';
+  bill.style.animationDuration = (1.5 + Math.random() * 2) + 's';
+  bill.style.fontSize = (1.2 + Math.random() * 1.2) + 'rem';
+  rain.appendChild(bill);
+  bill.addEventListener('animationend', () => bill.remove());
+}
+
+// ============================================================
+//  STATS & CHART
+// ============================================================
+function renderStats() {
+  const d = STATE.data;
+  document.getElementById('statMonthly').textContent  = '¥' + (d.monthlyTotal  || 0).toFixed(0);
+  document.getElementById('statVisits').textContent   = (d.visitCount   || 0) + '回';
+  document.getElementById('statBest').textContent     = '¥' + (d.bestSession  || 0).toFixed(0);
+  document.getElementById('statSeconds').textContent  = formatTime(d.totalSeconds || 0);
+  renderWeekChart();
+}
+
+function formatTime(secs) {
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  const s = secs % 60;
+  return h + 'h ' + String(m).padStart(2,'0') + 'm ' + String(s).padStart(2,'0') + 's';
+}
+
+function renderWeekChart() {
+  const canvas = document.getElementById('weekChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const data = STATE.data.weekData || [0,0,0,0,0,0,0];
+  const labels = ['月','火','水','木','金','土','日'];
+  const max = Math.max(...data, 1);
+  const W = canvas.width, H = canvas.height;
+  const barW = W / 7 * 0.6;
+  const gap   = W / 7;
+
+  ctx.clearRect(0, 0, W, H);
+  data.forEach((val, i) => {
+    const barH = (val / max) * (H - 30);
+    const x = gap * i + gap * 0.2;
+    const y = H - barH - 20;
+    const grad = ctx.createLinearGradient(0, y, 0, H - 20);
+    grad.addColorStop(0, '#FFD700');
+    grad.addColorStop(1, '#B8860B');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.roundRect(x, y, barW, barH, 4);
+    ctx.fill();
+    ctx.fillStyle = '#ccc';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(labels[i], x + barW / 2, H - 4);
+    if (val > 0) {
+      ctx.fillStyle = '#FFD700';
+      ctx.font = 'bold 9px sans-serif';
+      ctx.fillText('¥' + val.toFixed(0), x + barW / 2, y - 3);
+    }
+  });
+}
+
+// ============================================================
+//  RANKING
+// ============================================================
+const ANON_NAMES = [
+  'マーケ部・足痺れ丸（仮）',
+  '営業部・個室の哲人',
+  '総務部・便座の賢者',
+  '開発部・入力待ちの勇者',
+  'CS部・思索の旅人',
+  '経理部・数字と向き合う者',
+  '人事部・採用担当・逃亡中',
+];
+
+function renderRanking() {
+  const list = document.getElementById('rankingList');
+  list.innerHTML = '';
+  // ローカルの自分のスコアをシードにダミーランキングを生成
+  const myScore = STATE.data.monthlyTotal || 0;
+  const entries = ANON_NAMES.map((name, i) => ({
+    name,
+    score: Math.max(0, myScore * (1.5 - i * 0.18) + Math.random() * 300 - 150),
+  }));
+  entries[Math.floor(Math.random() * 3)] = { name: '（あなた）', score: myScore };
+  entries.sort((a, b) => b.score - a.score);
+
+  entries.forEach((e, i) => {
+    const li = document.createElement('li');
+    const medal = ['🥇','🥈','🥉'][i] || `${i+1}.`;
+    li.innerHTML = `<span class="rank-medal">${medal}</span>
+                    <span class="rank-name">${e.name}</span>
+                    <span class="rank-score">¥${e.score.toFixed(0)}</span>`;
+    if (e.name === '（あなた）') li.classList.add('rank-me');
+    list.appendChild(li);
+  });
+}
+
+// ============================================================
+//  BADGE DISPLAY
+// ============================================================
+function updateBadgeDisplay() {
+  const container = document.getElementById('badgeContainer');
+  if (!container) return;
+  container.innerHTML = '';
+  const earned = STATE.data.badges || [];
+  MILESTONES.forEach(m => {
+    const span = document.createElement('span');
+    span.className = 'badge-icon' + (earned.includes(m.badge) ? ' earned' : ' locked');
+    span.title = m.badge + ': ' + m.msg;
+    span.textContent = earned.includes(m.badge) ? m.badge : '🔒';
+    container.appendChild(span);
+  });
+}
+
+// ============================================================
+//  TOAST
+// ============================================================
+function showToast(msg, duration = 2500) {
+  const t = document.getElementById('toast');
+  if (!t) return;
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+// ============================================================
+//  DATA PERSISTENCE
+// ============================================================
+function saveData() {
+  try {
+    localStorage.setItem('pooppay_data', JSON.stringify(STATE.data));
+  } catch(e) {}
+}
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem('pooppay_data');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      STATE.data = Object.assign({
+        income: 0, workdays: 240,
+        monthlyTotal: 0, totalSeconds: 0,
+        visitCount: 0, bestSession: 0,
+        weekData: [0,0,0,0,0,0,0],
+        sessions: [], badges: [],
+      }, parsed);
+    }
+  } catch(e) {}
+  calcSecWage();
+}
+
+function calcSecWage() {
+  const inc = STATE.data.income   || 0;
+  const wd  = STATE.data.workdays || 240;
+  STATE.secWage = inc / (wd * 8 * 3600);
+}
+
+// ============================================================
+//  MONEY RAIN INTERVAL
+// ============================================================
+setInterval(() => {
+  if (STATE.isInToilet) spawnBill();
+}, 600);
